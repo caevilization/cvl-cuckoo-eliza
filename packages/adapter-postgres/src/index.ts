@@ -1444,8 +1444,16 @@ export class PostgresDatabaseAdapter
         await this.withRetry(async () => {
             const id = course.id || v4();
             await this.pool.query(
-                `INSERT INTO courses (id, title, description, content) VALUES ($1, $2, $3, $4)`,
-                [id, course.title, course.description, course.content]
+                `INSERT INTO courses (
+                    id, title, description, content, reward
+                ) VALUES ($1, $2, $3, $4, $5)`,
+                [
+                    id,
+                    course.title,
+                    course.description,
+                    course.content,
+                    course.reward ? JSON.stringify(course.reward) : null,
+                ]
             );
         });
     }
@@ -1463,8 +1471,16 @@ export class PostgresDatabaseAdapter
     async updateCourse(course: Course): Promise<void> {
         await this.withRetry(async () => {
             await this.pool.query(
-                `UPDATE courses SET title = $1, description = $2, content = $3 WHERE id = $4`,
-                [course.title, course.description, course.content, course.id]
+                `UPDATE courses
+                 SET title = $1, description = $2, content = $3, reward = $4
+                 WHERE id = $5`,
+                [
+                    course.title,
+                    course.description,
+                    course.content,
+                    course.reward ? JSON.stringify(course.reward) : null,
+                    course.id,
+                ]
             );
         });
     }

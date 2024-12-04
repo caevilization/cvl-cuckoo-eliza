@@ -347,6 +347,9 @@ export interface Memory {
 
     /** Embedding similarity score */
     similarity?: number;
+
+    /** Memory type */
+    type?: string;
 }
 
 /**
@@ -1194,6 +1197,7 @@ export interface Course {
     content: any;
     status: "draft" | "published" | "archived";
     tags?: string[];
+    reward?: Reward;
     metadata?: Record<string, any>;
 }
 
@@ -1229,5 +1233,20 @@ export interface CharacterTraits {
         formality?: number;
         directness?: number;
         enthusiasm?: number;
+    };
+}
+
+export interface Reward {
+    chain: string; // 区块链网络 (e.g. "ethereum", "solana")
+    contractAddress: string; // 合约地址
+    fromAddress: string; // 发放源地址
+    amount: string; // 发放数量(使用字符串避免精度问题)
+    tokenType?: string; // 代币类型 (e.g. "ERC20", "ERC721")
+    tokenId?: string; // NFT的tokenId
+    metadata?: {
+        name?: string; // 奖励名称
+        symbol?: string; // 代币符号
+        decimals?: number; // 精度
+        [key: string]: any;
     };
 }

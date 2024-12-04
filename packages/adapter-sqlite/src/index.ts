@@ -713,8 +713,11 @@ export class SqliteDatabaseAdapter
 
     // Course related methods
     async createCourse(course: Course): Promise<void> {
-        const sql =
-            "INSERT INTO courses (id, title, description, content, createdAt) VALUES (?, ?, ?, ?, ?)";
+        const sql = `
+            INSERT INTO courses (
+                id, title, description, content, reward, createdAt
+            ) VALUES (?, ?, ?, ?, ?, ?)
+        `;
         this.db
             .prepare(sql)
             .run(
@@ -722,6 +725,7 @@ export class SqliteDatabaseAdapter
                 course.title,
                 course.description,
                 JSON.stringify(course.content),
+                course.reward ? JSON.stringify(course.reward) : null,
                 course.createdAt ?? Date.now()
             );
     }
@@ -740,14 +744,18 @@ export class SqliteDatabaseAdapter
     }
 
     async updateCourse(course: Course): Promise<void> {
-        const sql =
-            "UPDATE courses SET title = ?, description = ?, content = ? WHERE id = ?";
+        const sql = `
+            UPDATE courses
+            SET title = ?, description = ?, content = ?, reward = ?
+            WHERE id = ?
+        `;
         this.db
             .prepare(sql)
             .run(
                 course.title,
                 course.description,
                 JSON.stringify(course.content),
+                course.reward ? JSON.stringify(course.reward) : null,
                 course.id
             );
     }
