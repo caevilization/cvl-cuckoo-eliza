@@ -33,7 +33,7 @@ jobs:
           pnpm store verify
 
       - name: Install dependencies
-        run: pnpm install --include=dev
+        run: pnpm install --include=dev -w
 
       - name: Build packages
         run: pnpm build
