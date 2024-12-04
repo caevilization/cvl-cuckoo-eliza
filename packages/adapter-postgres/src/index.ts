@@ -19,10 +19,13 @@ import {
     type Relationship,
     type UUID,
     type IDatabaseCacheAdapter,
+    type Course,
+    type LearningRecord,
     Participant,
     DatabaseAdapter,
     elizaLogger,
     getEmbeddingConfig,
+    CharacterTraits,
 } from "@ai16z/eliza";
 import fs from "fs";
 import { fileURLToPath } from "url";
@@ -1433,6 +1436,214 @@ export class PostgresDatabaseAdapter
                 );
                 return false;
             }
+        });
+    }
+
+    // 课程相关方法
+    async createCourse(course: Course): Promise<void> {
+        await this.withRetry(async () => {
+            const id = course.id || v4();
+            await this.pool.query(
+                `INSERT INTO courses (id, title, description, content) VALUES ($1, $2, $3, $4)`,
+                [id, course.title, course.description, course.content]
+            );
+        });
+    }
+
+    async getCourseById(courseId: UUID): Promise<Course | null> {
+        return this.withRetry(async () => {
+            const { rows } = await this.pool.query(
+                "SELECT * FROM courses WHERE id = $1",
+                [courseId]
+            );
+            return rows[0] || null;
+        });
+    }
+
+    async updateCourse(course: Course): Promise<void> {
+        await this.withRetry(async () => {
+            await this.pool.query(
+                `UPDATE courses SET title = $1, description = $2, content = $3 WHERE id = $4`,
+                [course.title, course.description, course.content, course.id]
+            );
+        });
+    }
+
+    async deleteCourse(courseId: UUID): Promise<void> {
+        await this.withRetry(async () => {
+            await this.pool.query("DELETE FROM courses WHERE id = $1", [
+                courseId,
+            ]);
+        });
+    }
+
+    // 学习记录相关方法
+    async createLearningRecord(record: LearningRecord): Promise<void> {
+        await this.withRetry(async () => {
+            const id = record.id || v4();
+            await this.pool.query(
+                `INSERT INTO learning_records (id, "userId", "courseId", progress, status, metadata)
+                 VALUES ($1, $2, $3, $4, $5, $6)`,
+                [
+                    id,
+                    record.userId,
+                    record.courseId,
+                    record.progress,
+                    record.status,
+                    record.metadata || {},
+                ]
+            );
+        });
+    }
+
+    async updateLearningProgress(
+        userId: UUID,
+        courseId: UUID,
+        progress: number,
+        status?: LearningRecord["status"]
+    ): Promise<boolean> {
+        return this.withRetry(async () => {
+            const result = await this.pool.query(
+                `UPDATE learning_records
+                 SET progress = $3,
+                     status = COALESCE($4, status),
+                     "lastAccessedAt" = CURRENT_TIMESTAMP,
+                     "completedAt" = CASE WHEN $4 = 'completed' THEN CURRENT_TIMESTAMP ELSE "completedAt" END
+                 WHERE "userId" = $1 AND "courseId" = $2`,
+                [userId, courseId, progress, status]
+            );
+            return result.rowCount ? result.rowCount > 0 : false;
+        });
+    }
+
+    async getLearningRecord(
+        userId: UUID,
+        courseId: UUID
+    ): Promise<LearningRecord | null> {
+        return this.withRetry(async () => {
+            const { rows } = await this.pool.query(
+                'SELECT * FROM learning_records WHERE "userId" = $1 AND "courseId" = $2',
+                [userId, courseId]
+            );
+            return rows[0] || null;
+        });
+    }
+
+    async getUserCourseProgress(userId: UUID): Promise<Array<LearningRecord>> {
+        return this.withRetry(async () => {
+            const { rows } = await this.pool.query(
+                `SELECT lr.*, c.title as course_title
+                 FROM learning_records lr
+                 JOIN courses c ON lr."courseId" = c.id
+                 WHERE lr."userId" = $1
+                 ORDER BY lr."lastAccessedAt" DESC`,
+                [userId]
+            );
+            return rows;
+        });
+    }
+
+    async getCoursesByAuthor(authorId: UUID): Promise<Course[]> {
+        return this.withRetry(async () => {
+            const { rows } = await this.pool.query(
+                "SELECT * FROM courses WHERE authorId = $1",
+                [authorId]
+            );
+            return rows;
+        });
+    }
+
+    async getLearningRecordById(
+        recordId: UUID
+    ): Promise<LearningRecord | null> {
+        return this.withRetry(async () => {
+            const { rows } = await this.pool.query(
+                "SELECT * FROM learning_records WHERE id = $1",
+                [recordId]
+            );
+            return rows[0] || null;
+        });
+    }
+
+    async updateLearningRecord(record: LearningRecord): Promise<void> {
+        await this.withRetry(async () => {
+            await this.pool.query(
+                "UPDATE learning_records SET progress = $1, status = $2, completedAt = $3 WHERE id = $4",
+                [record.progress, record.status, record.completedAt, record.id]
+            );
+        });
+    }
+
+    async deleteLearningRecord(recordId: UUID): Promise<void> {
+        await this.withRetry(async () => {
+            await this.pool.query(
+                "DELETE FROM learning_records WHERE id = $1",
+                [recordId]
+            );
+        });
+    }
+
+    async getLearningRecordsByUser(userId: UUID): Promise<LearningRecord[]> {
+        return this.withRetry(async () => {
+            const { rows } = await this.pool.query(
+                'SELECT * FROM learning_records WHERE "userId" = $1',
+                [userId]
+            );
+            return rows;
+        });
+    }
+
+    async getLearningRecordsByCourse(
+        courseId: UUID
+    ): Promise<LearningRecord[]> {
+        return this.withRetry(async () => {
+            const { rows } = await this.pool.query(
+                'SELECT * FROM learning_records WHERE "courseId" = $1',
+                [courseId]
+            );
+            return rows;
+        });
+    }
+
+    async updateCharacterTraits(
+        userId: UUID,
+        traits: CharacterTraits
+    ): Promise<void> {
+        return this.withRetry(async () => {
+            await this.pool.query(
+                `INSERT INTO character_traits (
+                    "userId",
+                    personality,
+                    mbti,
+                    interests,
+                    values,
+                    communication_style
+                ) VALUES ($1, $2, $3, $4, $5, $6)
+                ON CONFLICT ("userId") DO UPDATE SET
+                    personality = $2,
+                    mbti = $3,
+                    interests = $4,
+                    values = $5,
+                    communication_style = $6`,
+                [
+                    userId,
+                    traits.personality || {},
+                    traits.mbti || {},
+                    traits.interests || [],
+                    traits.values || [],
+                    traits.communication_style || {},
+                ]
+            );
+        });
+    }
+
+    async getCharacterTraits(userId: UUID): Promise<CharacterTraits | null> {
+        return this.withRetry(async () => {
+            const { rows } = await this.pool.query(
+                `SELECT * FROM character_traits WHERE "userId" = $1`,
+                [userId]
+            );
+            return rows[0] || null;
         });
     }
 }

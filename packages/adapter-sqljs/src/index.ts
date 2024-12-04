@@ -3,10 +3,18 @@ export * from "./types.ts";
 
 import {
     Account,
-    Actor, DatabaseAdapter, GoalStatus, IDatabaseCacheAdapter, Participant, type Goal,
+    Actor,
+    DatabaseAdapter,
+    GoalStatus,
+    IDatabaseCacheAdapter,
+    Participant,
+    type Goal,
     type Memory,
     type Relationship,
-    type UUID
+    type UUID,
+    type Course,
+    type LearningRecord,
+    CharacterTraits,
 } from "@ai16z/eliza";
 import { v4 } from "uuid";
 import { sqliteTables } from "./sqliteTables.ts";
@@ -14,7 +22,8 @@ import { Database } from "./types.ts";
 
 export class SqlJsDatabaseAdapter
     extends DatabaseAdapter<Database>
-    implements IDatabaseCacheAdapter {
+    implements IDatabaseCacheAdapter
+{
     constructor(db: Database) {
         super();
         this.db = db;
@@ -795,5 +804,179 @@ export class SqlJsDatabaseAdapter
             console.log("Error removing cache", error);
             return false;
         }
+    }
+
+    // Course related methods
+    async createCourse(course: Course): Promise<void> {
+        const sql =
+            "INSERT INTO courses (id, title, description, content, createdAt) VALUES (?, ?, ?, ?, ?)";
+        const stmt = this.db.prepare(sql);
+        stmt.run([
+            course.id ?? v4(),
+            course.title || "",
+            course.description || "",
+            JSON.stringify(course.content),
+            course.createdAt ? course.createdAt.getTime() : Date.now(),
+        ]);
+        stmt.free();
+    }
+
+    async getCourseById(courseId: UUID): Promise<Course | null> {
+        const sql = "SELECT * FROM courses WHERE id = ?";
+        const stmt = this.db.prepare(sql);
+        stmt.bind([courseId]);
+        const course = stmt.getAsObject() as unknown as Course;
+        stmt.free();
+        return course || null;
+    }
+
+    async getCoursesByAuthor(authorId: UUID): Promise<Course[]> {
+        const sql = "SELECT * FROM courses WHERE authorId = ?";
+        const stmt = this.db.prepare(sql);
+        stmt.bind([authorId]);
+        const courses: Course[] = [];
+        while (stmt.step()) {
+            courses.push(stmt.getAsObject() as unknown as Course);
+        }
+        stmt.free();
+        return courses;
+    }
+
+    async updateCourse(course: Course): Promise<void> {
+        const sql =
+            "UPDATE courses SET title = ?, description = ?, content = ? WHERE id = ?";
+        const stmt = this.db.prepare(sql);
+        stmt.run([
+            course.title || "",
+            course.description || "",
+            JSON.stringify(course.content),
+            course.id,
+        ]);
+        stmt.free();
+    }
+
+    async deleteCourse(courseId: UUID): Promise<void> {
+        const sql = "DELETE FROM courses WHERE id = ?";
+        const stmt = this.db.prepare(sql);
+        stmt.run([courseId]);
+        stmt.free();
+    }
+
+    // Learning Record related methods
+    async createLearningRecord(record: LearningRecord): Promise<void> {
+        const sql =
+            "INSERT INTO learning_records (id, userId, courseId, progress, status, completedAt, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        const stmt = this.db.prepare(sql);
+        stmt.run([
+            record.id ?? v4(),
+            record.userId,
+            record.courseId,
+            record.progress,
+            record.status,
+            record.completedAt ? record.completedAt.getTime() : null,
+            record.createdAt ? record.createdAt.getTime() : Date.now(),
+        ]);
+        stmt.free();
+    }
+
+    async getLearningRecordById(
+        recordId: UUID
+    ): Promise<LearningRecord | null> {
+        const sql = "SELECT * FROM learning_records WHERE id = ?";
+        const stmt = this.db.prepare(sql);
+        stmt.bind([recordId]);
+        const record = stmt.getAsObject() as unknown as LearningRecord;
+        stmt.free();
+        return record || null;
+    }
+
+    async updateLearningRecord(record: LearningRecord): Promise<void> {
+        const sql =
+            "UPDATE learning_records SET progress = ?, status = ?, completedAt = ? WHERE id = ?";
+        const stmt = this.db.prepare(sql);
+        stmt.run([
+            record.progress,
+            record.status,
+            record.completedAt ? record.completedAt.getTime() : null,
+            record.id,
+        ]);
+        stmt.free();
+    }
+
+    async deleteLearningRecord(recordId: UUID): Promise<void> {
+        const sql = "DELETE FROM learning_records WHERE id = ?";
+        const stmt = this.db.prepare(sql);
+        stmt.run([recordId]);
+        stmt.free();
+    }
+
+    async getLearningRecordsByUser(userId: UUID): Promise<LearningRecord[]> {
+        const sql = "SELECT * FROM learning_records WHERE userId = ?";
+        const stmt = this.db.prepare(sql);
+        stmt.bind([userId]);
+        const records: LearningRecord[] = [];
+        while (stmt.step()) {
+            records.push(stmt.getAsObject() as unknown as LearningRecord);
+        }
+        stmt.free();
+        return records;
+    }
+
+    async getLearningRecordsByCourse(
+        courseId: UUID
+    ): Promise<LearningRecord[]> {
+        const sql = "SELECT * FROM learning_records WHERE courseId = ?";
+        const stmt = this.db.prepare(sql);
+        stmt.bind([courseId]);
+        const records: LearningRecord[] = [];
+        while (stmt.step()) {
+            records.push(stmt.getAsObject() as unknown as LearningRecord);
+        }
+        stmt.free();
+        return records;
+    }
+
+    async updateCharacterTraits(
+        userId: UUID,
+        traits: CharacterTraits
+    ): Promise<void> {
+        const sql = `
+            INSERT OR REPLACE INTO character_traits (
+                userId,
+                personality,
+                mbti,
+                interests,
+                values,
+                communication_style
+            ) VALUES (?, ?, ?, ?, ?, ?)
+        `;
+        const stmt = this.db.prepare(sql);
+        stmt.run([
+            userId,
+            JSON.stringify(traits.personality || {}),
+            JSON.stringify(traits.mbti || {}),
+            JSON.stringify(traits.interests || []),
+            JSON.stringify(traits.values || []),
+            JSON.stringify(traits.communication_style || {}),
+        ]);
+        stmt.free();
+    }
+
+    async getCharacterTraits(userId: UUID): Promise<CharacterTraits | null> {
+        const sql = "SELECT * FROM character_traits WHERE userId = ?";
+        const stmt = this.db.prepare(sql);
+        stmt.bind([userId]);
+        const result = stmt.getAsObject() as any;
+        stmt.free();
+
+        if (!result.userId) return null;
+
+        return {
+            personality: JSON.parse(result.personality || "{}"),
+            mbti: JSON.parse(result.mbti || "{}"),
+            interests: JSON.parse(result.interests || "[]"),
+            values: JSON.parse(result.values || "[]"),
+            communication_style: JSON.parse(result.communication_style || "{}"),
+        };
     }
 }

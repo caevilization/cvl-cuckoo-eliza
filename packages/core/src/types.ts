@@ -648,6 +648,7 @@ export type Character = {
         discordVoiceHandlerTemplate?: string;
         discordShouldRespondTemplate?: string;
         discordMessageHandlerTemplate?: string;
+        characterTemplate?: string;
     };
 
     /** Character biography */
@@ -884,6 +885,34 @@ export interface IDatabaseAdapter {
     }): Promise<Relationship | null>;
 
     getRelationships(params: { userId: UUID }): Promise<Relationship[]>;
+
+    // Course related methods
+    createCourse(course: Course): Promise<void>;
+
+    getCourseById(courseId: UUID): Promise<Course | null>;
+
+    updateCourse(course: Course): Promise<void>;
+
+    deleteCourse(courseId: UUID): Promise<void>;
+
+    getCoursesByAuthor(authorId: UUID): Promise<Course[]>;
+
+    // Learning record related methods
+    createLearningRecord(record: LearningRecord): Promise<void>;
+
+    getLearningRecordById(recordId: UUID): Promise<LearningRecord | null>;
+
+    updateLearningRecord(record: LearningRecord): Promise<void>;
+
+    deleteLearningRecord(recordId: UUID): Promise<void>;
+
+    getLearningRecordsByUser(userId: UUID): Promise<LearningRecord[]>;
+
+    getLearningRecordsByCourse(courseId: UUID): Promise<LearningRecord[]>;
+
+    updateCharacterTraits(userId: UUID, traits: CharacterTraits): Promise<void>;
+
+    getCharacterTraits(userId: UUID): Promise<CharacterTraits | null>;
 }
 
 export interface IDatabaseCacheAdapter {
@@ -1155,3 +1184,50 @@ export type KnowledgeItem = {
     id: UUID;
     content: Content;
 };
+
+export interface Course {
+    id: UUID;
+    createdAt: Date;
+    title: string;
+    description?: string;
+    authorId: UUID;
+    content: any;
+    status: "draft" | "published" | "archived";
+    tags?: string[];
+    metadata?: Record<string, any>;
+}
+
+export interface LearningRecord {
+    id: UUID;
+    createdAt: Date;
+    userId: UUID;
+    courseId: UUID;
+    progress: number;
+    status: "not_started" | "in_progress" | "completed";
+    completedAt?: Date;
+    lastAccessedAt: Date;
+    metadata?: Record<string, any>;
+}
+
+export interface CharacterTraits {
+    personality?: {
+        openness?: number;
+        conscientiousness?: number;
+        extraversion?: number;
+        agreeableness?: number;
+        neuroticism?: number;
+    };
+    mbti?: {
+        energy?: number; // I-E
+        information?: number; // S-N
+        decisions?: number; // T-F
+        lifestyle?: number; // P-J
+    };
+    interests?: string[];
+    values?: string[];
+    communication_style?: {
+        formality?: number;
+        directness?: number;
+        enthusiasm?: number;
+    };
+}

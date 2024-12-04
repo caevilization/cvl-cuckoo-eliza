@@ -6,8 +6,11 @@ import {
     type Memory,
     type Relationship,
     type UUID,
+    type CharacterTraits,
     Participant,
     IDatabaseAdapter,
+    type Course,
+    type LearningRecord,
 } from "./types.ts";
 
 /**
@@ -348,4 +351,98 @@ export abstract class DatabaseAdapter<DB = any> implements IDatabaseAdapter {
     abstract getRelationships(params: {
         userId: UUID;
     }): Promise<Relationship[]>;
+
+    /**
+     * Creates a new course in the database.
+     * @param course The course object to create.
+     * @returns A Promise that resolves when the course has been created.
+     */
+    abstract createCourse(course: Course): Promise<void>;
+
+    /**
+     * Retrieves a course by its ID.
+     * @param courseId The UUID of the course to retrieve.
+     * @returns A Promise that resolves to the Course object or null if not found.
+     */
+    abstract getCourseById(courseId: UUID): Promise<Course | null>;
+
+    /**
+     * Updates a course in the database.
+     * @param course The course object with updated properties.
+     * @returns A Promise that resolves when the course has been updated.
+     */
+    abstract updateCourse(course: Course): Promise<void>;
+
+    /**
+     * Deletes a course from the database.
+     * @param courseId The UUID of the course to delete.
+     * @returns A Promise that resolves when the course has been deleted.
+     */
+    abstract deleteCourse(courseId: UUID): Promise<void>;
+
+    /**
+     * Retrieves all courses by a specific author.
+     * @param authorId The UUID of the author.
+     * @returns A Promise that resolves to an array of Course objects.
+     */
+    abstract getCoursesByAuthor(authorId: UUID): Promise<Course[]>;
+
+    /**
+     * Creates a new learning record in the database.
+     * @param record The learning record object to create.
+     * @returns A Promise that resolves when the learning record has been created.
+     */
+    abstract createLearningRecord(record: LearningRecord): Promise<void>;
+
+    /**
+     * Retrieves a learning record by its ID.
+     * @param recordId The UUID of the learning record to retrieve.
+     * @returns A Promise that resolves to the LearningRecord object or null if not found.
+     */
+    abstract getLearningRecordById(
+        recordId: UUID
+    ): Promise<LearningRecord | null>;
+
+    /**
+     * Updates a learning record in the database.
+     * @param record The learning record object with updated properties.
+     * @returns A Promise that resolves when the learning record has been updated.
+     */
+    abstract updateLearningRecord(record: LearningRecord): Promise<void>;
+
+    /**
+     * Deletes a learning record from the database.
+     * @param recordId The UUID of the learning record to delete.
+     * @returns A Promise that resolves when the learning record has been deleted.
+     */
+    abstract deleteLearningRecord(recordId: UUID): Promise<void>;
+
+    /**
+     * Retrieves all learning records for a specific user.
+     * @param userId The UUID of the user.
+     * @returns A Promise that resolves to an array of LearningRecord objects.
+     */
+    abstract getLearningRecordsByUser(userId: UUID): Promise<LearningRecord[]>;
+
+    /**
+     * Retrieves all learning records for a specific course.
+     * @param courseId The UUID of the course.
+     * @returns A Promise that resolves to an array of LearningRecord objects.
+     */
+    abstract getLearningRecordsByCourse(
+        courseId: UUID
+    ): Promise<LearningRecord[]>;
+
+    /**
+     * Updates character traits for a specific user.
+     */
+    abstract updateCharacterTraits(
+        userId: UUID,
+        traits: CharacterTraits
+    ): Promise<void>;
+
+    /**
+     * Retrieves character traits for a specific user.
+     */
+    abstract getCharacterTraits(userId: UUID): Promise<CharacterTraits | null>;
 }

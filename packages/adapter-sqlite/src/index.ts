@@ -11,6 +11,9 @@ import {
     type Memory,
     type Relationship,
     type UUID,
+    type Course,
+    type LearningRecord,
+    type CharacterTraits,
 } from "@ai16z/eliza";
 import { Database } from "better-sqlite3";
 import { v4 } from "uuid";
@@ -248,8 +251,8 @@ export class SqliteDatabaseAdapter
 
         let sql = `
             SELECT *, vec_distance_L2(embedding, ?) AS similarity
-            FROM memories 
-            WHERE type = ? 
+            FROM memories
+            WHERE type = ?
             AND roomId = ?`;
 
         if (params.unique) {
@@ -340,24 +343,24 @@ export class SqliteDatabaseAdapter
         // First get content text and calculate Levenshtein distance
         const sql = `
             WITH content_text AS (
-                SELECT 
+                SELECT
                     embedding,
                     json_extract(
                         json(content),
                         '$.' || ? || '.' || ?
                     ) as content_text
-                FROM memories 
+                FROM memories
                 WHERE type = ?
                 AND json_extract(
                     json(content),
                     '$.' || ? || '.' || ?
                 ) IS NOT NULL
             )
-            SELECT 
+            SELECT
                 embedding,
                 length(?) + length(content_text) - (
                     length(?) + length(content_text) - (
-                        length(replace(lower(?), lower(content_text), '')) + 
+                        length(replace(lower(?), lower(content_text), '')) +
                         length(replace(lower(content_text), lower(?), ''))
                     ) / 2
                 ) as levenshtein_score
@@ -706,5 +709,148 @@ export class SqliteDatabaseAdapter
             console.log("Error removing cache", error);
             return false;
         }
+    }
+
+    // Course related methods
+    async createCourse(course: Course): Promise<void> {
+        const sql =
+            "INSERT INTO courses (id, title, description, content, createdAt) VALUES (?, ?, ?, ?, ?)";
+        this.db
+            .prepare(sql)
+            .run(
+                course.id ?? v4(),
+                course.title,
+                course.description,
+                JSON.stringify(course.content),
+                course.createdAt ?? Date.now()
+            );
+    }
+
+    async getCourse(courseId: UUID): Promise<Course | null> {
+        const sql = "SELECT * FROM courses WHERE id = ?";
+        const course = this.db.prepare(sql).get(courseId) as Course | undefined;
+        if (!course) return null;
+        return {
+            ...course,
+            content:
+                typeof course.content === "string"
+                    ? JSON.parse(course.content)
+                    : course.content,
+        };
+    }
+
+    async updateCourse(course: Course): Promise<void> {
+        const sql =
+            "UPDATE courses SET title = ?, description = ?, content = ? WHERE id = ?";
+        this.db
+            .prepare(sql)
+            .run(
+                course.title,
+                course.description,
+                JSON.stringify(course.content),
+                course.id
+            );
+    }
+
+    async deleteCourse(courseId: UUID): Promise<void> {
+        const sql = "DELETE FROM courses WHERE id = ?";
+        this.db.prepare(sql).run(courseId);
+    }
+
+    // Learning Record related methods
+    async createLearningRecord(record: LearningRecord): Promise<void> {
+        const sql =
+            "INSERT INTO learning_records (id, userId, courseId, progress, status, completedAt, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        this.db
+            .prepare(sql)
+            .run(
+                record.id ?? v4(),
+                record.userId,
+                record.courseId,
+                record.progress,
+                record.status,
+                record.completedAt,
+                record.createdAt ?? Date.now()
+            );
+    }
+
+    async getLearningRecord(recordId: UUID): Promise<LearningRecord | null> {
+        const sql = "SELECT * FROM learning_records WHERE id = ?";
+        return (this.db.prepare(sql).get(recordId) as LearningRecord) || null;
+    }
+
+    async updateLearningRecord(record: LearningRecord): Promise<void> {
+        const sql =
+            "UPDATE learning_records SET progress = ?, status = ?, completedAt = ? WHERE id = ?";
+        this.db
+            .prepare(sql)
+            .run(record.progress, record.status, record.completedAt, record.id);
+    }
+
+    async getLearningRecordsByUser(userId: UUID): Promise<LearningRecord[]> {
+        const sql = "SELECT * FROM learning_records WHERE userId = ?";
+        return this.db.prepare(sql).all(userId) as LearningRecord[];
+    }
+
+    async getLearningRecordsByCourse(
+        courseId: UUID
+    ): Promise<LearningRecord[]> {
+        const sql = "SELECT * FROM learning_records WHERE courseId = ?";
+        return this.db.prepare(sql).all(courseId) as LearningRecord[];
+    }
+
+    async getCourseById(courseId: UUID): Promise<Course | null> {
+        return this.getCourse(courseId);
+    }
+
+    async getCoursesByAuthor(authorId: UUID): Promise<Course[]> {
+        const sql = "SELECT * FROM courses WHERE authorId = ?";
+        return this.db.prepare(sql).all(authorId) as Course[];
+    }
+
+    async getLearningRecordById(
+        recordId: UUID
+    ): Promise<LearningRecord | null> {
+        return this.getLearningRecord(recordId);
+    }
+
+    async deleteLearningRecord(recordId: UUID): Promise<void> {
+        const sql = "DELETE FROM learning_records WHERE id = ?";
+        this.db.prepare(sql).run(recordId);
+    }
+
+    async updateCharacterTraits(
+        userId: UUID,
+        traits: CharacterTraits
+    ): Promise<void> {
+        const stmt = this.db.prepare(
+            `INSERT OR REPLACE INTO character_traits (
+                userId, personality, mbti, interests, values, communication_style
+            ) VALUES (?, ?, ?, ?, ?, ?)`
+        );
+        stmt.run(
+            userId,
+            JSON.stringify(traits.personality || {}),
+            JSON.stringify(traits.mbti || {}),
+            JSON.stringify(traits.interests || []),
+            JSON.stringify(traits.values || []),
+            JSON.stringify(traits.communication_style || {})
+        );
+    }
+
+    async getCharacterTraits(userId: UUID): Promise<CharacterTraits | null> {
+        const stmt = this.db.prepare(
+            "SELECT * FROM character_traits WHERE userId = ?"
+        );
+        const result = stmt.get(userId) as any;
+        if (!result) return null;
+
+        return {
+            personality: JSON.parse(result.personality || "{}"),
+            mbti: JSON.parse(result.mbti || "{}"),
+            interests: JSON.parse(result.interests || "[]"),
+            values: JSON.parse(result.values || "[]"),
+            communication_style: JSON.parse(result.communication_style || "{}"),
+        };
     }
 }

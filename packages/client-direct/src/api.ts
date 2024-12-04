@@ -6,6 +6,8 @@ import { AgentRuntime } from "@ai16z/eliza";
 
 import { REST, Routes } from "discord.js";
 
+import cuckooRouter from "./routes";
+
 export function createApiRouter(agents: Map<string, AgentRuntime>) {
     const router = express.Router();
 
@@ -65,6 +67,8 @@ export function createApiRouter(agents: Map<string, AgentRuntime>) {
             res.status(500).json({ error: "Failed to fetch guilds" });
         }
     });
+
+    router.use("/cuckoo", cuckooRouter);
 
     return router;
 }

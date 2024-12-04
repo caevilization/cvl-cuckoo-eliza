@@ -3,12 +3,15 @@ import {
     type Memory,
     type Goal,
     type Relationship,
+    type CharacterTraits,
     Actor,
     GoalStatus,
     Account,
     type UUID,
     Participant,
     Room,
+    Course,
+    LearningRecord,
 } from "@ai16z/eliza";
 import { DatabaseAdapter } from "@ai16z/eliza";
 import { v4 as uuid } from "uuid";
@@ -679,5 +682,130 @@ export class SupabaseDatabaseAdapter extends DatabaseAdapter {
         }
 
         return data as Relationship[];
+    }
+
+    async createCourse(course: Course): Promise<void> {
+        const { error } = await this.supabase.from("courses").insert(course);
+        if (error) throw new Error(`Error creating course: ${error.message}`);
+    }
+
+    async getCourseById(courseId: UUID): Promise<Course | null> {
+        const { data, error } = await this.supabase
+            .from("courses")
+            .select("*")
+            .eq("id", courseId)
+            .single();
+        if (error) throw new Error(`Error getting course: ${error.message}`);
+        return data;
+    }
+
+    async getCoursesByAuthor(authorId: UUID): Promise<Course[]> {
+        const { data, error } = await this.supabase
+            .from("courses")
+            .select("*")
+            .eq("authorId", authorId);
+        if (error) throw new Error(`Error getting courses: ${error.message}`);
+        return data;
+    }
+
+    async updateCourse(course: Course): Promise<void> {
+        const { error } = await this.supabase
+            .from("courses")
+            .update(course)
+            .eq("id", course.id);
+        if (error) throw new Error(`Error updating course: ${error.message}`);
+    }
+
+    async deleteCourse(courseId: UUID): Promise<void> {
+        const { error } = await this.supabase
+            .from("courses")
+            .delete()
+            .eq("id", courseId);
+        if (error) throw new Error(`Error deleting course: ${error.message}`);
+    }
+
+    async createLearningRecord(record: LearningRecord): Promise<void> {
+        const { error } = await this.supabase
+            .from("learning_records")
+            .insert(record);
+        if (error) throw new Error(`Error creating record: ${error.message}`);
+    }
+
+    async getLearningRecordById(
+        recordId: UUID
+    ): Promise<LearningRecord | null> {
+        const { data, error } = await this.supabase
+            .from("learning_records")
+            .select("*")
+            .eq("id", recordId)
+            .single();
+        if (error) throw new Error(`Error getting record: ${error.message}`);
+        return data;
+    }
+
+    async updateLearningRecord(record: LearningRecord): Promise<void> {
+        const { error } = await this.supabase
+            .from("learning_records")
+            .update(record)
+            .eq("id", record.id);
+        if (error) throw new Error(`Error updating record: ${error.message}`);
+    }
+
+    async deleteLearningRecord(recordId: UUID): Promise<void> {
+        const { error } = await this.supabase
+            .from("learning_records")
+            .delete()
+            .eq("id", recordId);
+        if (error) throw new Error(`Error deleting record: ${error.message}`);
+    }
+
+    async getLearningRecordsByUser(userId: UUID): Promise<LearningRecord[]> {
+        const { data, error } = await this.supabase
+            .from("learning_records")
+            .select("*")
+            .eq("userId", userId);
+        if (error) throw new Error(`Error getting records: ${error.message}`);
+        return data;
+    }
+
+    async getLearningRecordsByCourse(
+        courseId: UUID
+    ): Promise<LearningRecord[]> {
+        const { data, error } = await this.supabase
+            .from("learning_records")
+            .select("*")
+            .eq("courseId", courseId);
+        if (error) throw new Error(`Error getting records: ${error.message}`);
+        return data;
+    }
+
+    async updateCharacterTraits(
+        userId: UUID,
+        traits: CharacterTraits
+    ): Promise<void> {
+        const { error } = await this.supabase.from("character_traits").upsert({
+            userId,
+            ...traits,
+        });
+
+        if (error) {
+            throw new Error(
+                `Error updating character traits: ${error.message}`
+            );
+        }
+    }
+
+    async getCharacterTraits(userId: UUID): Promise<CharacterTraits | null> {
+        const { data, error } = await this.supabase
+            .from("character_traits")
+            .select("*")
+            .eq("userId", userId)
+            .single();
+
+        if (error) {
+            throw new Error(`Error getting character traits: ${error.message}`);
+        }
+
+        return data;
     }
 }
