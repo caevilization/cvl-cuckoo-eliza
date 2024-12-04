@@ -21,8 +21,25 @@ jobs:
           cache: "npm"
           cache-dependency-path: pnpm-lock.yaml
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9.14.4
+          run_install: false
+
+      - name: Check pnpm store
+        run: |
+          pnpm store path
+          pnpm store verify
+
       - name: Install dependencies
         run: pnpm install --include=dev
+
+      - name: Build packages
+        run: pnpm build
+
+      - name: Run tests
+        run: pnpm test
 
       - name: Login to DockerHub
         uses: docker/login-action@v2
