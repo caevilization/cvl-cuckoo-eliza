@@ -2,14 +2,14 @@ import {
     composeContext,
     generateText,
     parseJsonArrayFromText as parseJsonFromText,
-} from "../src";
+} from "@ai16z/eliza";
 import {
     IAgentRuntime,
     Memory,
     ModelClass,
     type State,
     Evaluator,
-} from "../src";
+} from "@ai16z/eliza";
 
 const characterTemplate = `TASK: Update Character Traits
 Analyze the conversation and update the character's traits based on the new information provided.
@@ -69,14 +69,17 @@ async function handler(
         modelClass: ModelClass.SMALL,
     });
 
-    const updates = parseJsonFromText(response);
-    if (!updates) return;
+    const parsed = parseJsonFromText(response) as any;
+    if (!parsed) return;
 
     // 更新数据库中的角色特征
-    await runtime.databaseAdapter.updateCharacterTraits(
-        message.userId,
-        updates
-    );
+    await runtime.databaseAdapter.updateCharacterTraits(message.userId, {
+        personality: parsed.personality ?? {},
+        mbti: parsed.mbti ?? {},
+        interests: parsed.interests ?? [],
+        values: parsed.values ?? [],
+        communication_style: parsed.communication_style ?? {},
+    });
 }
 
 export const characterEvaluator: Evaluator = {

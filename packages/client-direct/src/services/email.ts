@@ -1,7 +1,5 @@
 import nodemailer from "nodemailer";
 import { config } from "../config/env.config";
-import { redisService } from "./redis";
-import { errorTypes } from "../utils/api_error";
 
 const transporter = nodemailer.createTransport({
     host: config.email.host,
@@ -25,13 +23,7 @@ export const emailService = {
     },
 
     async sendVerificationCode(email: string): Promise<void> {
-        const canSend = await redisService.checkSendFrequency(email);
-        if (!canSend) {
-            throw errorTypes.BAD_REQUEST("发送太频繁，请稍后再试");
-        }
-
         const code = this.generateVerificationCode();
-        await redisService.setVerificationCode(email, code);
         await this.sendVerificationEmail(email, code);
     },
 

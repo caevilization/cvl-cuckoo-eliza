@@ -32,19 +32,11 @@ services:
             - HELIUS_API_KEY=
             - SERVER_PORT=3000
             - WALLET_SECRET_SALT=secret_salt
+            - MONGO_URI=mongodb+srv://cleopatracaesar8:LRNlrn666!@cluster0.c0r7m.mongodb.net/
+            - MONGO_DB_NAME=stg
         ports:
             - "3000:3000"
-        depends_on:
-            - redis
-
         restart: always
 
-    redis:
-        image: redis:alpine
-        ports:
-            - "6379:6379"
-        volumes:
-            - redis_data:/data
-        restart: always
 volumes:
     tee:

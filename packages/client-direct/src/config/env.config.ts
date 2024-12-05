@@ -24,11 +24,6 @@ interface Config {
     db: {
         uri: string;
     };
-    redis: {
-        host: string;
-        port: number;
-        password: string;
-    };
     email: {
         host: string;
         port: number;
@@ -53,11 +48,6 @@ const config: Config = {
         uri:
             process.env.MONGO_URI ||
             "mongodb://localhost:27017/crypto-assistant",
-    },
-    redis: {
-        host: process.env.REDIS_HOST || "localhost",
-        port: parseInt(process.env.REDIS_PORT || "6379"),
-        password: process.env.REDIS_PASSWORD || "",
     },
     email: {
         host: process.env.EMAIL_HOST || "smtp.example.com",

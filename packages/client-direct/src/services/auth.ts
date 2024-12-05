@@ -5,7 +5,6 @@ import userSchema from "../models/user";
 import UserActivity from "../models/user_activity";
 import bcrypt from "bcryptjs";
 import mongoose from "mongoose";
-import { redisService } from "./redis";
 
 interface User {
     _id: mongoose.Types.ObjectId;
@@ -42,13 +41,13 @@ export const authService = {
         username: string,
         password: string,
         email: string,
-        verificationCode: string
+        _verificationCode: string
     ): Promise<Omit<User, "password">> {
         // 验证验证码
-        const savedCode = await redisService.getVerificationCode(email);
-        if (!savedCode || savedCode !== verificationCode) {
-            throw errorTypes.BAD_REQUEST("验证码无效或已过期");
-        }
+        // const savedCode = await emailService.getVerificationCode(email);
+        // if (!savedCode || savedCode !== verificationCode) {
+        //     throw errorTypes.BAD_REQUEST("验证码无效或已过期");
+        // }
 
         // 验证通过后继续原有的注册逻辑
         const user = await userSchema.findOne({

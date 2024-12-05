@@ -2,14 +2,14 @@ import {
     composeContext,
     generateText,
     parseJsonArrayFromText as parseJsonFromText,
-} from "../src";
+} from "@ai16z/eliza";
 import {
     IAgentRuntime,
     Memory,
     ModelClass,
     type State,
     Evaluator,
-} from "../src";
+} from "@ai16z/eliza";
 
 const cognitionTemplate = `TASK: 评估用户的Web3知识水平
 分析对话内容并评估用户在各个Web3领域的认知水平。
@@ -67,7 +67,7 @@ const cognitionTemplate = `TASK: 评估用户的Web3知识水平
     "privacy": number        // 0-1, 隐私保护
   },
   "demonstrated_knowledge": string[], // 用户展现出的具体知识点
-  "knowledge_gaps": string[],        // 识别出的知识盲点
+  "knowledge_gaps": string[],        // ���别出的知识盲点
   "learning_suggestions": string[]   // 学习建议
 }
 \`\`\``;
@@ -98,7 +98,7 @@ async function handler(
         roomId: message.roomId,
         userId: message.userId,
         agentId: runtime.agentId,
-        content: updates,
+        content: { text: JSON.stringify(updates) },
         unique: false,
     });
 }
@@ -135,7 +135,7 @@ export const cognitionEvaluator: Evaluator = {
                 {
                     user: "{{user2}}",
                     content: {
-                        text: "是的,ZK rollup的零知识证明可以即时确认交易,但电路设计和证明生成都很复杂。",
+                        text: "是的,ZK rollup的零知识证明可以即时确认交易,但电路设计和证明��成都很复杂。",
                     },
                 },
             ],
