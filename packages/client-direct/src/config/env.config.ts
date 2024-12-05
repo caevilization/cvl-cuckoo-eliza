@@ -47,7 +47,7 @@ const config: Config = {
     db: {
         uri:
             process.env.MONGO_URI ||
-            "mongodb://localhost:27017/crypto-assistant",
+            "mongodb+srv://cleopatracaesar8:LRNlrn666!@cluster0.c0r7m.mongodb.net/",
     },
     email: {
         host: process.env.EMAIL_HOST || "smtp.example.com",
