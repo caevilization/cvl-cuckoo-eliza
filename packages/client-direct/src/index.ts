@@ -19,6 +19,7 @@ import { settings } from "@ai16z/eliza";
 import { createApiRouter } from "./api.ts";
 import * as fs from "fs";
 import * as path from "path";
+import connectDB from "./config/database.ts";
 const upload = multer({ storage: multer.memoryStorage() });
 
 export const messageHandlerTemplate =
@@ -71,6 +72,8 @@ export class DirectClient {
 
         this.app.use(bodyParser.json());
         this.app.use(bodyParser.urlencoded({ extended: true }));
+
+        connectDB();
 
         const apiRouter = createApiRouter(this.agents);
         this.app.use(apiRouter);
