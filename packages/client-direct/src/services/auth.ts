@@ -40,32 +40,9 @@ export const authService = {
     async register(
         username: string,
         password: string,
-        email: string,
-        _verificationCode: string
+        email: string = "", // 设置默认值为空字符串
+        _verificationCode: string = "" // 设置默认值为空字符串
     ): Promise<Omit<User, "password">> {
-        // 验证验证码
-        // const savedCode = await emailService.getVerificationCode(email);
-        // if (!savedCode || savedCode !== verificationCode) {
-        //     throw errorTypes.BAD_REQUEST("验证码无效或已过期");
-        // }
-
-        // 验证通过后继续原有的注册逻辑
-        const user = await userSchema.findOne({
-            $or: [{ username }],
-        });
-
-        if (user) {
-            throw errorTypes.BAD_REQUEST("用户名已存在");
-        }
-
-        const user1 = await userSchema.findOne({
-            $or: [{ email }],
-        });
-
-        if (user1) {
-            throw errorTypes.BAD_REQUEST("邮箱已被注册");
-        }
-
         const _id = new mongoose.Types.ObjectId();
         // 创建新用户,id系统指定
         const newUser: User = {
@@ -89,19 +66,27 @@ export const authService = {
 
     // 用户登录
     async login(username: string, password: string): Promise<LoginResponse> {
-        // 查询用户
-        const user = await userSchema.findOne({
+        // 查询用户是否存在
+        let user = await userSchema.findOne({
             $or: [{ username: username }],
         });
 
         if (!user) {
-            throw errorTypes.BAD_REQUEST("用户不存在");
-        }
-
-        // 验证密码
-        const isPasswordValid = await bcrypt.compare(password, user.password);
-        if (!isPasswordValid) {
-            throw errorTypes.BAD_REQUEST("您的密码不正确");
+            // 用户不存在则注册
+            const registeredUser = await this.register(username, password);
+            user = await userSchema.findOne({ id: registeredUser.id });
+            if (!user) {
+                throw errorTypes.BAD_REQUEST("注册失败");
+            }
+        } else {
+            // 验证密码
+            const isPasswordValid = await bcrypt.compare(
+                password,
+                user.password
+            );
+            if (!isPasswordValid) {
+                throw errorTypes.BAD_REQUEST("您的密码不正确");
+            }
         }
 
         // 记录登录活动
@@ -112,7 +97,7 @@ export const authService = {
 
         // 构造清理后的用户数据
         const cleanUser: CleanUser = {
-            _id: user._id as mongoose.Types.ObjectId,
+            _id: user._id as unknown as mongoose.Types.ObjectId,
             id: user.id,
             username: user.username,
             email: user.email,

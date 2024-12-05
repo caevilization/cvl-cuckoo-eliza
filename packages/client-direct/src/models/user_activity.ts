@@ -1,8 +1,8 @@
 import mongoose from "mongoose";
 
 export enum ActivityType {
-    LOGIN = "LOGIN",
-    LOGOUT = "LOGOUT",
+    LOGIN = "login",
+    LOGOUT = "logout",
 }
 
 const userActivitySchema = new mongoose.Schema({

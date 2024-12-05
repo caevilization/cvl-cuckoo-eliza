@@ -73,6 +73,9 @@ export class DirectClient {
         this.app.use(bodyParser.json());
         this.app.use(bodyParser.urlencoded({ extended: true }));
 
+        this.app.use(cors());
+        this.app.use(express.json());
+
         connectDB();
 
         const apiRouter = createApiRouter(this.agents);

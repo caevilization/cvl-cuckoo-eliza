@@ -54,8 +54,8 @@ export const authController = {
 
     // 用户登录
     login: asyncHandler(async (req: Request, res: Response) => {
-        const { identifier, password } = req.body;
-        const loginResponse = await authService.login(identifier, password);
+        const { username, password } = req.body;
+        const loginResponse = await authService.login(username, password);
 
         res.json(loginResponse);
     }),

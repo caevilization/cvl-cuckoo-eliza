@@ -1,19 +1,14 @@
 import express from "express";
-import bodyParser from "body-parser";
-import cors from "cors";
 
 import { AgentRuntime } from "@ai16z/eliza";
 
 import { REST, Routes } from "discord.js";
 
 import cuckooRouter from "./routes";
+import { errorHandler } from "./middlewares/error";
 
 export function createApiRouter(agents: Map<string, AgentRuntime>) {
     const router = express.Router();
-
-    router.use(cors());
-    router.use(bodyParser.json());
-    router.use(bodyParser.urlencoded({ extended: true }));
 
     router.get("/hello", (req, res) => {
         res.json({ message: "Hello World!" });
@@ -69,6 +64,8 @@ export function createApiRouter(agents: Map<string, AgentRuntime>) {
     });
 
     router.use("/cuckoo", cuckooRouter);
+
+    router.use(errorHandler);
 
     return router;
 }
